@@ -1,33 +1,58 @@
-﻿using SchoolManagementAPI.Repository.IRepository;
+﻿using Microsoft.EntityFrameworkCore;
+using SchoolManagementAPI.Data;
+using SchoolManagementAPI.Repository.IRepository;
 using System.Linq.Expressions;
 
 namespace SchoolManagementAPI.Repository
 {
     public class Repository<T> : IRepository<T> where T : class
     {
-        public Task CreateAsync(T entity)
+        private readonly AplicationDbContext _db;
+        internal DbSet<T> dbSet;
+        public Repository(AplicationDbContext db)
         {
-            throw new NotImplementedException();
+            _db = db;
+            this.dbSet = _db.Set<T>();
+        }
+        public async Task CreateAsync(T entity)
+        {
+            await dbSet.AddAsync(entity);
+            await SaveAsync();
         }
 
-        public Task<List<T>> GetAllAsync(Expression<Func<T, bool>>? filter = null)
+        public async Task<List<T>> GetAllAsync(Expression<Func<T, bool>>? filter = null)
         {
-            throw new NotImplementedException();
+            IQueryable<T> query = dbSet;
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+            return await query.ToListAsync();
         }
 
-        public Task<T> GetAsync(Expression<Func<T, bool>>? filter = null, bool tracked = true)
+        public async Task<T> GetAsync(Expression<Func<T, bool>>? filter = null, bool tracked = true)
         {
-            throw new NotImplementedException();
+            IQueryable<T> query = dbSet;
+            if (!tracked)
+            {
+                query = query.AsNoTracking();
+            }
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+            return await query.FirstOrDefaultAsync();
         }
 
-        public Task RemoveAsync(T entity)
+        public async Task RemoveAsync(T entity)
         {
-            throw new NotImplementedException();
+            dbSet.Remove(entity);
+            await SaveAsync();
         }
 
-        public Task SaveAsync()
+        public async Task SaveAsync()
         {
-            throw new NotImplementedException();
+            await _db.SaveChangesAsync();
         }
     }
 }
